@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Plant Pal - A2</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="css/main.css" />
+
+  
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+
+    <!--delete favicon -->
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
+    <script defer src="js/main.js"></script>
+  </head>
+  <body>
+    <header class="container">
+      <h1 id="app-title">Plant Pal 🌱</h1>
+      <p class="subtitle">Track plants, water on time.</p>
+      <nav>
+        <a href="#add">Add Plant</a>
+        <a href="#all">All Plants</a>
+      </nav>
+    </header>
+
+    <main class="container grid">
+
+
+      <!-- Main form -->
+      <section id="add" class="card">
+        <h2>Add a Plant</h2>
+        <form id="plant-form" novalidate>
+          <div class="field">
+            <label for="name">Name<span aria-hidden="true">*</span></label>
+            <input id="name" name="name" type="text" required maxlength="100" placeholder="eg., Monstera" />
+          </div>
+
+          <div class="field">
+            <label for="species">Species</label>
+            <input id="species" name="species" type="text" maxlength="100" placeholder="eg., Monstera deliciosa" />
+          </div>
+
+          <div class="field">
+            <label for="lastWatered">Last watered<span aria-hidden="true">*</span></label>
+            <input id="lastWatered" name="lastWatered" type="date" required />
+          </div>
+
+          <div class="field">
+            <label for="intervalDays">Interval (days)<span aria-hidden="true">*</span></label>
+            <input id="intervalDays" name="intervalDays" type="number" min="1" step="1" required placeholder="e.g., 7" />
+          </div>
+
+          <div class="actions">
+            <button id="submitBtn" class="btn" type="submit">Add Plant!</button>
+          </div>
+
+          <p id="form-error" class="error" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <!-- the results -->
+      <section id="all" class="card">
+        <h2>All Plants</h2>
+        <div class="table-wrap">
+          <table id="results" aria-describedby="results-caption">
+            <caption id="results-caption" class="sr-only">Plants table (includes our derived fields)</caption>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Species</th>
+                <th>Last Watered</th>
+                <th>Interval (days)</th>
+                <th>Next Water</th>
+                <th>Status</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <tbody id="results-body">
+
+
+              <!-- js populates rows -->
+            </tbody>
+          </table>
+        </div>
+        <p id="empty-state" class="muted hidden">No plants yet, add one on the left! Surely you have a plant to add, right?</p>
+      </section>
+    </main>
+
+    <footer class="container">
+      <small>CS4241 A2 - HTML/CSS/JS + Node - No frameworks - Made by Utku Yakar</small>
+    </footer>
+  </body>
+</html>
