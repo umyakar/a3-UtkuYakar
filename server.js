@@ -41,12 +41,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // db
-const mongoKey = Object.keys(process.env).find(k => /MONGO.*(URL|URI)/i.test(k) && (process.env[k] || '').trim());
-let mongoUri = mongoKey ? String(process.env[mongoKey]).trim().replace(/^['"]|['"]$/g, '') : '';
+let mongoUri =
+  (process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.MONGO_URL || process.env.MONGO_URI || '').trim().replace(/^['"]|['"]$/g, '');
+
 if (!mongoUri) {
-  console.error('Missing MONGODB_URI in .env');
-  process.exit(1);
+  mongoUri = 'mongodb+srv://umyakar:1204@cs4241-a3-cluster.iofar8n.mongodb.net/a3db?retryWrites=true&w=majority&appName=CS4241-a3-cluster';
 }
+
 await mongoose.connect(mongoUri);
 
 // models
