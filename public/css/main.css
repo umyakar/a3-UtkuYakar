@@ -18,7 +18,7 @@ main.container-fluid { margin-top: 0; }
 
 .site-header, .site-footer { padding-inline: 1rem; }
 
-/* ------Layout Stuff ------- */
+/* ---Layout Stuff --- */
 .app-grid{
   display:grid;
   grid-template-columns: 340px 1fr;
