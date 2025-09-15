@@ -1,95 +1,147 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>Plant Pal - A2</title>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="stylesheet" href="css/main.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plant Pal 🌱 - A3</title>
 
-  
-    <!-- Google Font -->
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-
-    <!--delete favicon -->
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
+    <link rel="stylesheet" href="/css/main.css" />
     <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
-    <script defer src="js/main.js"></script>
+    <script defer src="/js/main.js"></script>
   </head>
   <body>
-    <header class="container">
-      <h1 id="app-title">Plant Pal 🌱</h1>
-      <p class="subtitle">Track plants, water on time.</p>
+    <header class="container-fluid site-header">
       <nav>
-        <a href="#add">Add Plant</a>
-        <a href="#all">All Plants</a>
+        <ul>
+          <li><strong>Plant Pal 🌱</strong></li>
+        </ul>
+        <ul id="auth-nav" class="hidden">
+          <li><a href="#add">Add Plant</a></li>
+          <li><a href="#all">All Plants</a></li>
+          <li><button id="logoutBtn" class="secondary">Logout</button></li>
+        </ul>
       </nav>
+      <p class="muted">Track plants, water on time.</p>
     </header>
 
-    <main class="container grid">
+    <main class="container-fluid">
+      <section id="login-view">
+        <article class="card">
+          <h2>Login</h2>
+          <p class="muted">New usernames are created automatically. You’ll be told if that happens.</p>
+          <form id="login-form">
+            <div class="grid grid-2">
+              <label>
+                Username
+                <input id="login-username" name="username" type="text" required maxlength="60" placeholder="e.g., Joshua" />
+              </label>
+              <label>
+                Password
+                <input id="login-password" name="password" type="password" required minlength="4" placeholder="••••" />
+              </label>
+            </div>
+            <div class="grid grid-2">
+              <button class="contrast" type="submit">Sign in</button>
 
-
-      <!-- Main form -->
-      <section id="add" class="card">
-        <h2>Add a Plant</h2>
-        <form id="plant-form" novalidate>
-          <div class="field">
-            <label for="name">Name<span aria-hidden="true">*</span></label>
-            <input id="name" name="name" type="text" required maxlength="100" placeholder="eg., Monstera" />
-          </div>
-
-          <div class="field">
-            <label for="species">Species</label>
-            <input id="species" name="species" type="text" maxlength="100" placeholder="eg., Monstera deliciosa" />
-          </div>
-
-          <div class="field">
-            <label for="lastWatered">Last watered<span aria-hidden="true">*</span></label>
-            <input id="lastWatered" name="lastWatered" type="date" required />
-          </div>
-
-          <div class="field">
-            <label for="intervalDays">Interval (days)<span aria-hidden="true">*</span></label>
-            <input id="intervalDays" name="intervalDays" type="number" min="1" step="1" required placeholder="e.g., 7" />
-          </div>
-
-          <div class="actions">
-            <button id="submitBtn" class="btn" type="submit">Add Plant!</button>
-          </div>
-
-          <p id="form-error" class="error" aria-live="polite"></p>
-        </form>
+              <!-- OAuth option -->
+              <a role="button" class="secondary outline" id="github-login" href="/auth/github">Sign in with GitHub</a>
+            </div>
+            <p id="login-msg" class="error"></p>
+          </form>
+        </article>
       </section>
 
-      <!-- the results -->
-      <section id="all" class="card">
-        <h2>All Plants</h2>
-        <div class="table-wrap">
-          <table id="results" aria-describedby="results-caption">
-            <caption id="results-caption" class="sr-only">Plants table (includes our derived fields)</caption>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Species</th>
-                <th>Last Watered</th>
-                <th>Interval (days)</th>
-                <th>Next Water</th>
-                <th>Status</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody id="results-body">
+      <!-- app view -->
+      <section id="app-view" class="hidden">
+        <h2 id="welcome">Welcome</h2>
 
+        <div class="app-grid">
+          <article id="add" class="card">
+            <h3>Add a Plant</h3>
+            <form id="plant-form" novalidate>
+              <div class="grid grid-2">
+                <label>
+                  Name *
+                  <input id="name" name="name" type="text" required maxlength="100" placeholder="Monstera" />
+                </label>
+                <label>
+                  Species
+                  <input id="species" name="species" type="text" maxlength="100" placeholder="Monstera deliciosa" />
+                </label>
+              </div>
 
-              <!-- js populates rows -->
-            </tbody>
-          </table>
+              <div class="grid grid-2">
+                <label>
+                  Last watered *
+                  <input id="lastWatered" name="lastWatered" type="date" required />
+                </label>
+                <label>
+                  Interval (days) *
+                  <input id="intervalDays" name="intervalDays" type="number" min="1" step="1" required placeholder="7" />
+                </label>
+              </div>
+
+              <div class="grid grid-2">
+                <label>
+                  Sunlight
+                  <select id="sunlight" name="sunlight">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </label>
+                <fieldset>
+                  <legend>Location</legend>
+                  <label>
+                    <input type="checkbox" id="indoors" name="indoors" checked />
+                    Indoors
+                  </label>
+                </fieldset>
+              </div>
+
+              <label>
+                Notes
+                <textarea id="notes" name="notes" rows="3" placeholder="watering tricks, pests, etc."></textarea>
+              </label>
+
+              <footer class="grid grid-2">
+                <button id="submitBtn" class="contrast" type="submit">Save</button>
+                <button id="cancelEditBtn" class="secondary hidden" type="button">Cancel edit</button>
+              </footer>
+
+              <p id="form-error" class="error" aria-live="polite"></p>
+              <input type="hidden" id="editId" />
+            </form>
+          </article>
+
+          <article id="all" class="card">
+            <h3>Your Plants</h3>
+            <div class="table-wrap">
+              <table id="results" aria-describedby="results-caption">
+                <caption id="results-caption" class="sr-only">Plants table</caption>
+                <colgroup>
+                  <col style="width:12%"><col style="width:12%"><col style="width:11%">
+                  <col style="width:8%"><col style="width:11%"><col style="width:8%">
+                  <col style="width:9%"><col style="width:7%"><col style="width:auto"><col style="width:9%">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Name</th><th>Species</th><th>Last Watered</th><th>Interval</th>
+                    <th>Next Water</th><th>Status</th><th>Sunlight</th><th>Indoors</th><th>Notes</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="results-body"></tbody>
+              </table>
+            </div>
+            <p id="empty-state" class="muted hidden">No plants yet — add one!</p>
+          </article>
         </div>
-        <p id="empty-state" class="muted hidden">No plants yet, add one on the left! Surely you have a plant to add, right?</p>
       </section>
     </main>
 
-    <footer class="container">
-      <small>CS4241 A2 - HTML/CSS/JS + Node - No frameworks - Made by Utku Yakar</small>
+    <footer class="container-fluid site-footer">
+      <small>CS4241 A3 - Express + MongoDB - Utku Yakar</small>
     </footer>
   </body>
 </html>

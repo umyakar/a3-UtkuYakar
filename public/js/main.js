@@ -1,146 +1,234 @@
-// frontend JS for Plant Watering Scheduler, A2
+const qs = s => document.querySelector(s);
 
-async function parseResponse(res) {
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) return res.json();
-  const text = await res.text();
-  return { ok: res.ok, data: null, error: text || `HTTP ${res.status}` };
-}
+// views
+const loginView = qs('#login-view');
+const appView = qs('#app-view');
+const authNav = qs('#auth-nav');
+const welcome = qs('#welcome');
 
-async function fetchAll() {
-  const res = await fetch("/api/plants", { headers: { Accept: "application/json" } });
-  const data = await parseResponse(res);
-  if (!data.ok) throw new Error(data.error || "load failed");
-  return data.data;
-}
+// table bits
+const resultsBody = qs('#results-body');
+const emptyState = qs('#empty-state');
 
-async function addPlant(payload) {
-  const res = await fetch("/api/plants", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await parseResponse(res);
-  if (!data.ok) throw new Error(data.error || "add failed");
-  return data.data;
-}
 
-async function deletePlant(id) {
-  const res = await fetch(`/api/plants/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-    headers: { Accept: "application/json" },
-  });
-  const data = await parseResponse(res);
-  if (!data.ok) throw new Error(data.error || "delete failed");
-  return data.data;
-}
+// login/logout
+const loginForm = qs('#login-form');
+const loginMsg = qs('#login-msg');
+const logoutBtn = qs('#logoutBtn');
 
-function formatUS(iso) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
-  const [y, m, d] = iso.split("-");
-  return `${m}/${d}/${y}`;
-}
+// form
+const form = qs('#plant-form');
+const cancelEditBtn = qs('#cancelEditBtn');
+const submitBtn = qs('#submitBtn');
+const formError = qs('#form-error');
+const editIdInput = qs('#editId');
 
-function renderTable(rows) {
-  const tbody = document.getElementById("results-body");
-  const empty = document.getElementById("empty-state");
-  tbody.innerHTML = "";
-
-  if (!rows || rows.length === 0) {
-    empty.classList.remove("hidden");
-    return;
-  }
-  empty.classList.add("hidden");
-
-  for (const r of rows) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHTML(r.name)}</td>
-      <td>${escapeHTML(r.species || "")}</td>
-      <td>${escapeHTML(formatUS(r.lastWatered))}</td>
-      <td>${escapeHTML(String(r.intervalDays))}</td>
-      <td>${escapeHTML(formatUS(r.nextWaterDate))}</td>
-      <td>${badge(r.urgency)}</td>
-
-      <td>
-        <button class="btn danger" data-id="${r.id}" aria-label="Delete ${escapeHTML(r.name)}">
-          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <line x1="6" y1="6" x2="18" y2="18" stroke="black" stroke-width="2" stroke-linecap="round"></line>
-            <line x1="18" y1="6" x2="6" y2="18" stroke="black" stroke-width="2" stroke-linecap="round"></line>
-          </svg>
-        </button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  }
-}
-
-function badge(status) {
-  const cls = status === "Overdue" ? "badge danger" : status === "Due Soon" ? "badge warn" : "badge ok";
-  return `<span class="${cls}">${escapeHTML(status)}</span>`;
-}
-
-function escapeHTML(s) {
-
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function hookDelete() {
-  document.getElementById("results-body").addEventListener("click", async (e) => {
-    const btn = e.target.closest("button[data-id]");
-    if (!btn) return;
-    try {
-
-      const data = await deletePlant(btn.getAttribute("data-id"));
-      renderTable(data);
-    } catch (err) {
-      alert(err.message || "Delete failed sorry");
-    }
-  });
-}
-
-function hookForm() {
-  const form = document.getElementById("plant-form");
-  const errorEl = document.getElementById("form-error");
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    errorEl.textContent = "";
-
-    const name = document.getElementById("name").value.trim();
-    const species = document.getElementById("species").value.trim();
-
-    const lastWatered = document.getElementById("lastWatered").value;
-    const intervalDays = parseInt(document.getElementById("intervalDays").value, 10);
-
-    if (!name) return (errorEl.textContent = "Please enter a name");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(lastWatered)) return (errorEl.textContent = "Pick a valid date");
-    if (!(Number.isInteger(intervalDays) && intervalDays >= 1)) return (errorEl.textContent = "Interval must be ≥ 1");
-
-    try {
-      const data = await addPlant({ name, species, lastWatered, intervalDays });
-      renderTable(data);
-      form.reset();
-    } catch (err) {
-      errorEl.textContent = err.message || "Something went wrong, sorry";
-    }
-  });
-}
+init();
 
 async function init() {
-  hookForm();
-  hookDelete();
+  // events
+  loginForm?.addEventListener('submit', onLocalLogin);
+  logoutBtn?.addEventListener('click', onLogout);
+  form?.addEventListener('submit', onSubmitItem);
+  cancelEditBtn?.addEventListener('click', resetForm);
+
+  await whoAmI();
+}
+
+async function whoAmI() {
   try {
-    renderTable(await fetchAll());
+    const r = await fetch('/api/me');
+    const { user } = await r.json();
+    if (user) {
+      welcome.textContent = `Welcome, ${user.username}`;
+      showApp();
+      await refresh();
+    } else {
+      showLogin();
+    }
   } catch {
-    const errP = document.getElementById("form-error");
-    if (errP) errP.textContent = "Failed to load data";
+    showLogin();
   }
 }
 
-window.addEventListener("DOMContentLoaded", init);
+function showLogin() {
+  loginView.classList.remove('hidden');
+  appView.classList.add('hidden');
+  authNav.classList.add('hidden');
+}
+
+
+function showApp() {
+  loginView.classList.add('hidden');
+  appView.classList.remove('hidden');
+  authNav.classList.remove('hidden');
+}
+
+async function onLocalLogin(e) {
+  e.preventDefault();
+  loginMsg.textContent = '';
+  const username = qs('#login-username').value.trim();
+  const password = qs('#login-password').value;
+  if (!username || !password) { loginMsg.textContent = 'Please enter a username and password.'; return; }
+
+  try {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await r.json();
+    if (!r.ok) { loginMsg.textContent = data.error || 'Login failed'; return; }
+    await whoAmI();
+  } catch {
+    loginMsg.textContent = 'Login failed';
+  }
+}
+
+
+async function onLogout() {
+  try { await fetch('/api/auth/logout', { method: 'POST' }); }
+  finally {
+    resultsBody.innerHTML = '';
+    emptyState.classList.add('hidden');
+    showLogin();
+  }
+}
+
+// form helpers
+function getFormData() {
+  return {
+    name: qs('#name').value.trim(),
+    species: qs('#species').value.trim(),
+    lastWatered: qs('#lastWatered').value,
+    intervalDays: parseInt(qs('#intervalDays').value, 10),
+    sunlight: qs('#sunlight').value,
+    indoors: qs('#indoors').checked,
+    notes: qs('#notes').value.trim()
+  };
+}
+function setFormData(item) {
+  qs('#name').value = item.name ?? '';
+  qs('#species').value = item.species ?? '';
+  qs('#lastWatered').value = item.lastWatered ? formatDateInput(item.lastWatered) : '';
+  qs('#intervalDays').value = item.intervalDays ?? '';
+  qs('#sunlight').value = item.sunlight ?? 'medium';
+  qs('#indoors').checked = !!item.indoors;
+  qs('#notes').value = item.notes ?? '';
+}
+function resetForm() {
+  form.reset();
+  editIdInput.value = '';
+  cancelEditBtn.classList.add('hidden');
+  submitBtn.textContent = 'Save';
+  formError.textContent = '';
+}
+
+async function onSubmitItem(e) {
+  e.preventDefault();
+  formError.textContent = '';
+  const payload = getFormData();
+  if (!payload.name || !payload.lastWatered || !payload.intervalDays) {
+    formError.textContent = 'Please fill in all required fields.'; return;
+  }
+  const id = editIdInput.value;
+  const method = id ? 'PUT' : 'POST';
+  const url = id ? `/api/items/${id}` : '/api/items';
+  try {
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Save failed');
+    resetForm();
+    await refresh();
+  } catch (err) {
+    formError.textContent = err.message;
+  }
+}
+
+async function refresh() {
+  try {
+    const r = await fetch('/api/items');
+    const { items } = await r.json();
+    renderItems(items || []);
+  } catch {}
+}
+
+function renderItems(items) {
+  resultsBody.innerHTML = '';
+  if (!items.length) { emptyState.classList.remove('hidden'); return; }
+  emptyState.classList.add('hidden');
+  for (const it of items) resultsBody.appendChild(renderRow(it));
+}
+
+function renderRow(it) {
+  const tr = document.createElement('tr');
+  const last = new Date(it.lastWatered);
+  const next = addDays(last, Number(it.intervalDays));
+  const { label: statusLabel, className: statusClass } = wateringStatus(next);
+
+  const cells = [
+    textCell(it.name || ''),
+    textCell(it.species || ''),
+    textCell(fmt(last)),
+    textCell(String(it.intervalDays)),
+    textCell(fmt(next)),
+    badgeCell(statusLabel, statusClass),
+    textCell(capitalize(it.sunlight || 'medium')),
+    textCell(it.indoors ? 'Yes' : 'No'),
+    textCell(it.notes || ''),
+    actionsCell(it._id),
+  ];
+  cells.forEach(td => tr.appendChild(td));
+  return tr;
+}
+
+function textCell(text){ const td=document.createElement('td'); td.textContent=text; return td; }
+function badgeCell(text, cls){ const td=document.createElement('td'); const span=document.createElement('span'); span.className=`badge ${cls}`; span.textContent=text; td.appendChild(span); return td; }
+
+
+function actionsCell(id) {
+  const td = document.createElement('td'); td.className='actions';
+  const editBtn = document.createElement('button'); editBtn.type='button'; editBtn.textContent='Edit'; editBtn.addEventListener('click',()=>startEdit(id));
+  const delBtn = document.createElement('button'); delBtn.type='button'; delBtn.className='secondary'; delBtn.textContent='Delete'; delBtn.addEventListener('click',()=>onDelete(id));
+  td.append(editBtn, ' ', delBtn); return td;
+}
+
+async function startEdit(id) {
+  try {
+    const r = await fetch('/api/items');
+    const { items } = await r.json();
+    const item = (items || []).find(x => x._id === id);
+    if (!item) return;
+    setFormData(item);
+    editIdInput.value = id;
+    cancelEditBtn.classList.remove('hidden');
+    submitBtn.textContent = 'Update';
+    document.getElementById('add')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch {}
+}
+
+async function onDelete(id) {
+  if (!confirm('Delete this plant?')) return;
+  try {
+    const r = await fetch(`/api/items/${id}`, { method: 'DELETE' });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error(data.error || 'Delete failed');
+    }
+    await refresh();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+// utils
+function fmt(d){ if(!(d instanceof Date)||isNaN(d.getTime()))return ''; const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+function formatDateInput(v){ return fmt(new Date(v)); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+Number(n||0)); return x; }
+function wateringStatus(next){ const today=new Date(); const diff=Math.floor((stripTime(next)-stripTime(today))/(1000*60*60*24)); if(diff>=2)return{label:'On track',className:'ok'}; if(diff>=0)return{label:'Water soon',className:'warn'}; return{label:'Overdue',className:'danger'}; }
+function stripTime(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+function capitalize(s=''){ return s.charAt(0).toUpperCase()+s.slice(1); }
