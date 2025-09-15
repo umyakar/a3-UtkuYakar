@@ -21,6 +21,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
+
 // security
 app.use(helmet({
   contentSecurityPolicy: {
@@ -39,7 +41,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // db
-const mongoUri = process.env.MONGODB_URI;
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URL || process.env.MONGODB_URL || process.env.MONGO_URI;
 if (!mongoUri) {
   console.error('Missing MONGODB_URI in .env');
   process.exit(1);
