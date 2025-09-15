@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
-if (process.env.NODE_ENV !== 'production') dotenv.config();
+const isRailway = Object.keys(process.env).some(k => k.startsWith('RAILWAY_'));
+if (!isRailway && process.env.NODE_ENV !== 'production') dotenv.config();
 
 import express from 'express';
 import helmet from 'helmet';
@@ -41,12 +42,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // db
-let mongoUri =
-  (process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.MONGO_URL || process.env.MONGO_URI || '').trim().replace(/^['"]|['"]$/g, '');
+const envVal = k => (process.env[k] || '').toString().trim().replace(/^['"]|['"]$/g, '');
+const mongoUri =
+  envVal('MONGODB_URI') ||
+  envVal('MONGODB_URL') ||
+  envVal('MONGO_URL')   ||
+  envVal('MONGO_URI');
 
 if (!mongoUri) {
-  mongoUri = 'mongodb+srv://umyakar:1204@cs4241-a3-cluster.iofar8n.mongodb.net/a3db?retryWrites=true&w=majority&appName=CS4241-a3-cluster';
+  console.error('Missing MONGODB_URI in .env');
+  process.exit(1);
 }
+await mongoose.connect(mongoUri);
+
 
 await mongoose.connect(mongoUri);
 
