@@ -41,7 +41,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // db
-const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URL || process.env.MONGODB_URL || process.env.MONGO_URI;
+const mongoKey = Object.keys(process.env).find(k => /MONGO.*(URL|URI)/i.test(k) && (process.env[k] || '').trim());
+let mongoUri = mongoKey ? String(process.env[mongoKey]).trim().replace(/^['"]|['"]$/g, '') : '';
 if (!mongoUri) {
   console.error('Missing MONGODB_URI in .env');
   process.exit(1);
