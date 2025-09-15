@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config({ override: true });
+if (process.env.NODE_ENV !== 'production') dotenv.config();
 
 import express from 'express';
 import helmet from 'helmet';
